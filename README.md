@@ -1,0 +1,1 @@
+Small project to get familiar with golang threading primitives and websockets.

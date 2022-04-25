@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gabrielopesantos/carracing/pkg/game"
 	"github.com/gorilla/websocket"
@@ -12,7 +13,9 @@ import (
 var addr = flag.String("addr", "127.0.0.1:8888", "Server address")
 
 // Upgrades an HTTP connection to a WebSocket connection.
-var upgrader = websocket.Upgrader{}
+var upgrader = websocket.Upgrader{
+	HandshakeTimeout: 3 * time.Second,
+}
 
 func main() {
 	flag.Parse()
