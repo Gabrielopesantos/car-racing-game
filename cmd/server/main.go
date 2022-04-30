@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gabrielopesantos/carracing/pkg/game"
+	"github.com/gabrielopesantos/carracing/pkg/server"
 	"github.com/gorilla/websocket"
 )
 
@@ -22,7 +22,7 @@ func main() {
 	conns := make(chan *websocket.Conn, 10)
 
 	go func() {
-		game.RunGame(conns)
+		server.Run(conns)
 	}()
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
