@@ -9,10 +9,14 @@ const (
 type Game struct {
 	Distance             int
 	CurrDistanceTraveled int
-	GameMessages         chan GameMessage
+	GameMessages         chan GamePlayMessage
 }
 
-type GameMessage struct {
+type GameStateMessage struct {
+	State int
+}
+
+type GamePlayMessage struct {
 	PlayerId byte
 	Distance int
 }
