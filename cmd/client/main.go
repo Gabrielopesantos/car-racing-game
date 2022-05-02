@@ -57,12 +57,12 @@ sendMessagesLoop:
 		msg := <-messages
 		switch msg.State {
 		case game.Ready:
-			log.Print("Enterning in `game.Ready`")
+			log.Print("Entering in `game.Ready`")
 			rMsg := game.GameStateMessage{State: game.Ready}
 			conn.WriteJSON(rMsg)
 		case game.Play:
-			pMsg := game.GamePlayMessage{Distance: 3}
 			for i := 0; i < 30; i++ {
+				pMsg := game.GamePlayMessage{PlayerId: '1', Distance: i}
 				fmt.Println(i)
 				err := conn.WriteJSON(pMsg)
 				fmt.Println(err)

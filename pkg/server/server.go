@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"log"
-	"strconv"
 	"sync"
 	"time"
 
@@ -24,27 +23,23 @@ func waitForReady(conn *websocket.Conn, wg *sync.WaitGroup) {
 
 	err = conn.ReadJSON(&msg)
 	if err != nil {
-		log.Fatal("Failed to recieve `ready` message")
+		log.Fatal("Failed to receive `ready` message")
 	}
 
 	if msg.State != game.Ready {
-		log.Fatal("Invalid message recieved")
+		log.Fatal("Invalid message received")
 	}
 }
 
 func listenForMessages(pConn *websocket.Conn, gameMessages chan<- game.GamePlayMessage, playerId byte) {
 	go func() {
 		for {
-			_, msg, err := pConn.ReadMessage()
+			gMsg := game.GamePlayMessage{}
+			err := pConn.ReadJSON(&gMsg)
 			if err != nil {
 				log.Fatalf("Failed to read message")
 			}
 
-			d, _ := strconv.Atoi(string(msg))
-			gMsg := game.GamePlayMessage{
-				PlayerId: playerId,
-				Distance: d,
-			}
 			gameMessages <- gMsg
 		}
 	}()
