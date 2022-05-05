@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/gabrielopesantos/carracing/pkg/game"
 	"github.com/gorilla/websocket"
@@ -61,13 +62,16 @@ sendMessagesLoop:
 			rMsg := game.GameStateMessage{State: game.Ready}
 			conn.WriteJSON(rMsg)
 		case game.Play:
-			for i := 0; i < 30; i++ {
-				pMsg := game.GamePlayMessage{PlayerId: '1', Distance: i}
-				fmt.Println(i)
-				err := conn.WriteJSON(pMsg)
-				fmt.Println(err)
-			}
+			go func() {
+				for i := 0; i < 30; i++ {
+					pMsg := game.GamePlayMessage{Distance: 250}
+					_ = conn.WriteJSON(pMsg)
+					time.Sleep(300 * time.Millisecond)
+				}
+			}()
 		case game.Over:
+			log.Print("Game over")
+			conn.Close()
 			break sendMessagesLoop
 		default:
 			continue

@@ -40,6 +40,7 @@ func listenForMessages(pConn *websocket.Conn, gameMessages chan<- game.GamePlayM
 				log.Fatalf("Failed to read message")
 			}
 
+			gMsg.PlayerId = playerId
 			gameMessages <- gMsg
 		}
 	}()
@@ -61,12 +62,13 @@ func Run(conns <-chan *websocket.Conn) {
 
 		// Create game and start
 		g := game.Game{
-			Distance:     1000,
-			GameMessages: make(chan game.GamePlayMessage),
+			Distance:             1000,
+			CurrDistanceTraveled: make(map[byte]int),
+			GameMessages:         make(chan game.GamePlayMessage),
 		}
 		playMsg := game.GameStateMessage{State: game.Play}
 		for _, p := range players {
-			wg.Add(1)
+			// wg.Add(1)
 			err := p.WriteJSON(playMsg)
 			if err != nil {
 				log.Fatalf("Failed to send `play` message")
@@ -83,11 +85,33 @@ func Run(conns <-chan *websocket.Conn) {
 		for {
 			select {
 			case gMsg := <-g.GameMessages:
-				fmt.Printf("%+v\n", gMsg)
+				log.Printf("%+v", g)
+				if _, ok := g.CurrDistanceTraveled[gMsg.PlayerId]; !ok {
+					g.CurrDistanceTraveled[gMsg.PlayerId] = gMsg.Distance
+				} else {
+					g.CurrDistanceTraveled[gMsg.PlayerId] += gMsg.Distance
+				}
+
+				for _, d := range g.CurrDistanceTraveled {
+					if d > g.Distance {
+						break gameMainLoop
+					}
+				}
 			case <-ticker.C:
 				fmt.Println("ticker")
 				break gameMainLoop
 			}
 		}
+
+		overMsg := game.GameStateMessage{State: game.Over}
+		for _, p := range players {
+			// wg.Add(1)
+			err := p.WriteJSON(overMsg)
+			if err != nil {
+				log.Fatalf("Failed to send `over` message")
+			}
+			p.Close()
+		}
+
 	}()
 }

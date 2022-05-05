@@ -8,7 +8,7 @@ const (
 
 type Game struct {
 	Distance             int
-	CurrDistanceTraveled int
+	CurrDistanceTraveled map[byte]int
 	GameMessages         chan GamePlayMessage
 }
 
