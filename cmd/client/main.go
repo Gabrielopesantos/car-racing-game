@@ -22,10 +22,10 @@ var srvURL = url.URL{
 	Path:   *path,
 }
 
-func readMessages(conn *websocket.Conn, messages chan<- game.GameStateMessage) {
+func readMessages(conn *websocket.Conn, messages chan<- game.StateMessage) {
 	go func() {
 		for {
-			var gameMsg game.GameStateMessage
+			var gameMsg game.StateMessage
 			err := conn.ReadJSON(&gameMsg)
 			if err != nil {
 				log.Printf("Failed to read msg. Error: %v", err)
@@ -44,7 +44,7 @@ func connect(wg *sync.WaitGroup) {
 		log.Print("Entering done")
 		wg.Done()
 	}()
-	messages := make(chan game.GameStateMessage)
+	messages := make(chan game.StateMessage)
 
 	conn, _, err := websocket.DefaultDialer.Dial(srvURL.String(), nil)
 	if err != nil {
@@ -61,12 +61,12 @@ sendMessagesLoop:
 		switch msg.State {
 		case game.Ready:
 			log.Print("Entering in `game.Ready`")
-			rMsg := game.GameStateMessage{State: game.Ready}
+			rMsg := game.StateMessage{State: game.Ready}
 			conn.WriteJSON(rMsg)
 		case game.Play:
 			go func() {
 				for {
-					pMsg := game.GamePlayMessage{Distance: rand.Intn(500)}
+					pMsg := game.PlayMessage{Distance: rand.Intn(500)}
 					_ = conn.WriteJSON(pMsg)
 					time.Sleep(300 * time.Millisecond)
 				}

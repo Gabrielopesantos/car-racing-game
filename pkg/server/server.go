@@ -15,7 +15,7 @@ func waitForReady(conn *websocket.Conn, wg *sync.WaitGroup) {
 		defer wg.Done()
 	}()
 
-	msg := game.GameStateMessage{State: game.Ready}
+	msg := game.StateMessage{State: game.Ready}
 	err := conn.WriteJSON(msg)
 	if err != nil {
 		log.Fatal("Failed to send `ready` message")
@@ -31,16 +31,16 @@ func waitForReady(conn *websocket.Conn, wg *sync.WaitGroup) {
 	}
 }
 
-func listenForMessages(pConn *websocket.Conn, gameMessages chan<- game.GamePlayMessage, playerId byte) {
+func listenForMessages(p *game.Player, gameMessages chan<- game.PlayMessage) {
 	go func() {
 		for {
-			gMsg := game.GamePlayMessage{}
-			err := pConn.ReadJSON(&gMsg)
+			gMsg := game.PlayMessage{}
+			err := p.Conn.ReadJSON(&gMsg)
 			if err != nil {
 				return
 			}
 
-			gMsg.PlayerId = playerId
+			gMsg.PlayerId = p.Identifier
 			gameMessages <- gMsg
 		}
 	}()
@@ -48,35 +48,34 @@ func listenForMessages(pConn *websocket.Conn, gameMessages chan<- game.GamePlayM
 
 func Run(conns <-chan *websocket.Conn) {
 	for {
-		player1 := <-conns
-		player2 := <-conns
-		players := []*websocket.Conn{player1, player2}
+		p1_conn := <-conns
+		p2_conn := <-conns
 
 		go func() {
+			// Create game
+			gameInstance := game.NewGame(1000)
+			gameInstance.Players[0].Conn = p1_conn
+			gameInstance.Players[1].Conn = p2_conn
+
 			// Ready players
 			wg := &sync.WaitGroup{}
-			for _, p := range players {
+			for _, p := range gameInstance.Players {
 				wg.Add(1)
-				waitForReady(p, wg)
+				waitForReady(p.Conn, wg)
 			}
 			wg.Wait()
 
-			// Create game and start
-			g := game.Game{
-				Distance:             10000,
-				CurrDistanceTraveled: make(map[byte]int),
-				GameMessages:         make(chan game.GamePlayMessage),
-			}
-			playMsg := game.GameStateMessage{State: game.Play}
-			for _, p := range players {
-				err := p.WriteJSON(playMsg)
+			// Setup and start game
+			playMsg := game.StateMessage{State: game.Play}
+			for _, p := range gameInstance.Players {
+				err := p.Conn.WriteJSON(playMsg)
 				if err != nil {
 					log.Fatalf("Failed to send `play` message")
 				}
 			}
 
-			listenForMessages(player1, g.GameMessages, '1')
-			listenForMessages(player2, g.GameMessages, '2')
+			listenForMessages(&gameInstance.Players[0], gameInstance.GameMessages)
+			listenForMessages(&gameInstance.Players[1], gameInstance.GameMessages)
 
 			// podium := map[string]*websocket.Conn{"winner": nil, "loser": nil}
 			ticker := time.NewTicker(30 * time.Second)
@@ -84,32 +83,31 @@ func Run(conns <-chan *websocket.Conn) {
 		gameMainLoop:
 			for {
 				select {
-				case gMsg := <-g.GameMessages:
-					log.Printf("%+v", g)
-					if _, ok := g.CurrDistanceTraveled[gMsg.PlayerId]; !ok {
-						g.CurrDistanceTraveled[gMsg.PlayerId] = gMsg.Distance
-					} else {
-						g.CurrDistanceTraveled[gMsg.PlayerId] += gMsg.Distance
-					}
-
-					for _, d := range g.CurrDistanceTraveled {
-						if d > g.Distance {
+				case gMsg := <-gameInstance.GameMessages:
+					log.Printf("P1\n%+v", gameInstance.Players)
+					log.Printf("P2\n%+v", gameInstance.Players)
+					for playerIndex := range gameInstance.Players {
+						if gMsg.PlayerId == gameInstance.Players[playerIndex].Identifier {
+							gameInstance.Players[playerIndex].DistanceTraveled += gMsg.Distance
+						}
+						if gameInstance.Players[playerIndex].DistanceTraveled >= gameInstance.Distance {
 							break gameMainLoop
 						}
 					}
+
 				case <-ticker.C:
 					break gameMainLoop
 				}
 			}
 
-			overMsg := game.GameStateMessage{State: game.Over}
-			for _, p := range players {
+			overMsg := game.StateMessage{State: game.Over}
+			for _, p := range gameInstance.Players {
 				// wg.Add(1)
-				err := p.WriteJSON(overMsg)
+				err := p.Conn.WriteJSON(overMsg)
 				if err != nil {
 					log.Fatalf("Failed to send `over` message")
 				}
-				p.Close()
+				p.Conn.Close()
 			}
 			fmt.Println("Done")
 		}()

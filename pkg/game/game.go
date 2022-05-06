@@ -1,28 +1,54 @@
 package game
 
+import "github.com/gorilla/websocket"
+
 const (
 	Ready = iota
 	Play
 	Over
 )
 
-type Game struct {
-	Distance             int
-	CurrDistanceTraveled map[byte]int
-	GameMessages         chan GamePlayMessage
+type Player struct {
+	Identifier       string
+	Conn             *websocket.Conn
+	DistanceTraveled int
 }
 
-type GameStateMessage struct {
+type Game struct {
+	Distance     int
+	Players      []Player
+	GameMessages chan PlayMessage
+}
+
+func NewGame(distance int) *Game {
+	return &Game{
+		Distance: distance,
+		Players: []Player{
+			{
+				Identifier:       "Player 1",
+				DistanceTraveled: 0,
+			},
+			{
+				Identifier:       "Player 2",
+				DistanceTraveled: 0,
+			},
+		},
+		GameMessages: make(chan PlayMessage),
+	}
+
+}
+
+type StateMessage struct {
 	State int
 }
 
-type GamePlayMessage struct {
-	PlayerId byte
+type PlayMessage struct {
+	PlayerId string
 	Distance int
 }
 
-func CreateStateMessage(state int) *GameStateMessage {
-	return &GameStateMessage{
+func CreateStateMessage(state int) *StateMessage {
+	return &StateMessage{
 		State: state,
 	}
 }
