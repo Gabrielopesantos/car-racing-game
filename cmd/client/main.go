@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net/url"
 	"sync"
@@ -31,8 +30,10 @@ func readMessages(conn *websocket.Conn, messages chan<- game.GameStateMessage) {
 				log.Printf("Failed to read msg. Error: %v", err)
 				continue
 			}
-			fmt.Println("Reading message")
 			messages <- gameMsg
+			if gameMsg.State == game.Over {
+				return
+			}
 		}
 	}()
 }
@@ -63,7 +64,7 @@ sendMessagesLoop:
 			conn.WriteJSON(rMsg)
 		case game.Play:
 			go func() {
-				for i := 0; i < 30; i++ {
+				for {
 					pMsg := game.GamePlayMessage{Distance: 250}
 					_ = conn.WriteJSON(pMsg)
 					time.Sleep(300 * time.Millisecond)

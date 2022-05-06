@@ -20,3 +20,9 @@ type GamePlayMessage struct {
 	PlayerId byte
 	Distance int
 }
+
+func CreateStateMessage(state int) *GameStateMessage {
+	return &GameStateMessage{
+		State: state,
+	}
+}
