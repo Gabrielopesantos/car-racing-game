@@ -17,6 +17,11 @@ When reached, servers sends custom message to winner and loser and closes connec
 - first cient to reach game distance wins
 - server sends `over` message with winner or loser
 
+## How to run
+- start by running the server (eg. `go run ./cmd/server/main.go`)
+- run client (eg. `go run ./cmd/client/main.go`)
+
 ### License
 
 MIT
+
