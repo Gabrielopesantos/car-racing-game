@@ -9,12 +9,13 @@ If this exchange succeeds, players continuously send the traveled distance (a ra
 
 When reached, servers sends custom message to winner and loser and closes connection.
 
-## Game state steps (WIP)
-- When two players connect
-- Server sends message `Ready`
-- After both send `Ready` to server game starts
-- Players continuously send distance travelled
-- When a player hits track distance, server sends `GameOver`
+## Game state steps
+- server waits for two players to connect
+- `ready` message is exchanged between server and clients
+- server sends `play`
+- client send distance traveled (random number)
+- first cient to reach game distance wins
+- server sends `over` message with winner or loser
 
 ### License
 

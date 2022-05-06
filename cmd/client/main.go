@@ -41,7 +41,6 @@ func readMessages(conn *websocket.Conn, messages chan<- game.StateMessage) {
 
 func connect(wg *sync.WaitGroup) {
 	defer func() {
-		log.Print("Entering done")
 		wg.Done()
 	}()
 	messages := make(chan game.StateMessage)
@@ -60,7 +59,6 @@ sendMessagesLoop:
 		msg := <-messages
 		switch msg.State {
 		case game.Ready:
-			log.Print("Entering in `game.Ready`")
 			rMsg := game.StateMessage{State: game.Ready}
 			conn.WriteJSON(rMsg)
 		case game.Play:
@@ -72,7 +70,7 @@ sendMessagesLoop:
 				}
 			}()
 		case game.Over:
-			log.Print("Game over")
+			log.Println(msg.Msg)
 			conn.Close()
 			break sendMessagesLoop
 		default:
@@ -85,7 +83,6 @@ sendMessagesLoop:
 
 func run() {
 	wg := sync.WaitGroup{}
-
 	for i := 0; i < 2; i++ {
 		wg.Add(1)
 		go func() {
@@ -97,7 +94,6 @@ func run() {
 }
 
 func main() {
-	flag.Parse() // Is this still necessary?
-
+	flag.Parse()
 	run()
 }

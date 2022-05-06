@@ -18,6 +18,7 @@ type Game struct {
 	Distance     int
 	Players      []Player
 	GameMessages chan PlayMessage
+	Winner       int
 }
 
 func NewGame(distance int) *Game {
@@ -34,12 +35,14 @@ func NewGame(distance int) *Game {
 			},
 		},
 		GameMessages: make(chan PlayMessage),
+		Winner:       -1,
 	}
 
 }
 
 type StateMessage struct {
 	State int
+	Msg   string
 }
 
 type PlayMessage struct {

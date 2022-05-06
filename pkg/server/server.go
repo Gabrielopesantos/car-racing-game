@@ -53,7 +53,7 @@ func Run(conns <-chan *websocket.Conn) {
 
 		go func() {
 			// Create game
-			gameInstance := game.NewGame(1000)
+			gameInstance := game.NewGame(10000)
 			gameInstance.Players[0].Conn = p1_conn
 			gameInstance.Players[1].Conn = p2_conn
 
@@ -77,20 +77,19 @@ func Run(conns <-chan *websocket.Conn) {
 			listenForMessages(&gameInstance.Players[0], gameInstance.GameMessages)
 			listenForMessages(&gameInstance.Players[1], gameInstance.GameMessages)
 
-			// podium := map[string]*websocket.Conn{"winner": nil, "loser": nil}
-			ticker := time.NewTicker(30 * time.Second)
+			ticker := time.NewTicker(3 * time.Second)
 
 		gameMainLoop:
 			for {
 				select {
 				case gMsg := <-gameInstance.GameMessages:
-					log.Printf("P1\n%+v", gameInstance.Players)
-					log.Printf("P2\n%+v", gameInstance.Players)
-					for playerIndex := range gameInstance.Players {
-						if gMsg.PlayerId == gameInstance.Players[playerIndex].Identifier {
-							gameInstance.Players[playerIndex].DistanceTraveled += gMsg.Distance
+					log.Printf("P1 - %d | P2 - %d", gameInstance.Players[0].DistanceTraveled, gameInstance.Players[1].DistanceTraveled)
+					for pIdx := range gameInstance.Players {
+						if gMsg.PlayerId == gameInstance.Players[pIdx].Identifier {
+							gameInstance.Players[pIdx].DistanceTraveled += gMsg.Distance
 						}
-						if gameInstance.Players[playerIndex].DistanceTraveled >= gameInstance.Distance {
+						if gameInstance.Players[pIdx].DistanceTraveled >= gameInstance.Distance {
+							gameInstance.Winner = pIdx
 							break gameMainLoop
 						}
 					}
@@ -101,15 +100,22 @@ func Run(conns <-chan *websocket.Conn) {
 			}
 
 			overMsg := game.StateMessage{State: game.Over}
-			for _, p := range gameInstance.Players {
-				// wg.Add(1)
+			for pIdx, p := range gameInstance.Players {
+				overMsg.Msg = p.Identifier + ":" + "Draw"
+				if gameInstance.Winner != -1 {
+					overMsg.Msg = p.Identifier + ":" + "Loser"
+					if pIdx == gameInstance.Winner {
+						overMsg.Msg = p.Identifier + ":" + "Winner"
+					}
+				}
+				log.Println(overMsg.Msg)
 				err := p.Conn.WriteJSON(overMsg)
 				if err != nil {
 					log.Fatalf("Failed to send `over` message")
 				}
 				p.Conn.Close()
 			}
-			fmt.Println("Done")
+			fmt.Print("\n")
 		}()
 	}
 
