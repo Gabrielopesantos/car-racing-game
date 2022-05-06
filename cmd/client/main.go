@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"math/rand"
 	"net/url"
 	"sync"
 	"time"
@@ -65,7 +66,7 @@ sendMessagesLoop:
 		case game.Play:
 			go func() {
 				for {
-					pMsg := game.GamePlayMessage{Distance: 250}
+					pMsg := game.GamePlayMessage{Distance: rand.Intn(500)}
 					_ = conn.WriteJSON(pMsg)
 					time.Sleep(300 * time.Millisecond)
 				}
